@@ -1,3 +1,7 @@
+# Config
+config.dev.json
+config.prod.json
+
 # Miscellaneous
 *.class
 *.log

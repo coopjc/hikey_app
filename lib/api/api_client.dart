@@ -18,6 +18,8 @@ class ApiClient {
 
   final String _baseUrl = ApiConfig.baseUrl;
 
+  void Function()? onUnauthorized;
+
   Future<Map<String, dynamic>> get(
     String path, {
     Map<String, String>? query,
@@ -64,6 +66,10 @@ class ApiClient {
     Map<String, String>? query,
     bool authenticated = true,
   }) async {
+    if (!ApiConfig.isConfigured) {
+      throw ApiException('API_URL is not configured.');
+    }
+
     final Uri uri = Uri.parse(
       '$_baseUrl$path',
     ).replace(queryParameters: (query == null || query.isEmpty) ? null : query);
@@ -109,12 +115,37 @@ class ApiClient {
   }
 
   Map<String, dynamic> _parseResponse(http.Response response) {
+    final int status = response.statusCode;
     final String body = response.body;
+    final bool isSuccess = status >= 200 && status < 300;
+
+    if (status == 401) onUnauthorized?.call();
+
+    final Object? responseBody;
 
     try {
-      return jsonDecode(body);
+      responseBody = jsonDecode(body);
     } on FormatException {
-      throw ApiException('Invalid JSON response from the server.');
+      throw ApiException(
+        'Invalid JSON response from the server.',
+        statusCode: status,
+      );
     }
+
+    final Map<String, dynamic> json = responseBody is Map<String, dynamic>
+        ? responseBody
+        : <String, dynamic>{'json': responseBody};
+
+    if (!isSuccess) {
+      final Object? message = json['message'];
+
+      if (message is String && message.isNotEmpty) {
+        throw ApiException(message, statusCode: status);
+      }
+    }
+
+    return json;
   }
+
+  void dispose() => _http.close();
 }

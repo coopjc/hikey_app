@@ -2,6 +2,7 @@ class ApiConfig {
   const ApiConfig._();
 
   static const String baseUrl = String.fromEnvironment('API_URL');
+  static bool get isConfigured => baseUrl.isNotEmpty;
 
   static const String registerPath = '/api/auth/register';
   static const String loginPath = '/api/auth/login';

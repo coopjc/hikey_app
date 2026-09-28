@@ -33,14 +33,18 @@ class AuthService {
     );
 
     final Object? data = json['data'];
-    final String? message = json['message'] as String?;
 
     // If the response does not contain data, there was an error.
     // Throw an exception with the message from the response.
-    if (data == null || data is! Map<String, dynamic>) {
-      if (message is String) {
-        throw ApiException(message);
-      }
+    if (data == null || (data is! Map<String, dynamic> && data is! String)) {
+      final Object? message = json['message'];
+
+      throw ApiException(
+        message is String && message.isNotEmpty
+            ? message
+            : 'Unexpected auth response from the server.',
+        statusCode: json['status'] as int?,
+      );
     }
 
     return _createSession(json);
@@ -57,13 +61,14 @@ class AuthService {
     );
 
     final Object? data = json['data'];
-    final String? message = json['message'] as String?;
 
     // If the response does not contain data, there was an error.
     // Throw an exception with the message from the response.
-    if (data == null || data is! Map<String, dynamic>) {
-      if (message is String) {
-        throw ApiException(message);
+    if (data == null || (data is! Map<String, dynamic> && data is! String)) {
+      final Object? message = json['message'];
+
+      if (message is String && message.isNotEmpty) {
+        throw ApiException(message, statusCode: json['status'] as int?);
       }
     }
 
@@ -76,18 +81,19 @@ class AuthService {
     final Map<String, dynamic> json = await _api.get(ApiConfig.currentUserPath);
 
     final Object? data = json['data'];
-    final String? message = json['message'] as String?;
-    final int? status = json['status'] as int?;
 
-    // If the response does not contain data, there was an error.
-    // Throw an exception with the message from the response.
-    if (data == null || data is! Map<String, dynamic>) {
-      if (message is String) {
-        throw ApiException(message, statusCode: status);
-      }
+    if (data is! Map<String, dynamic>) {
+      final Object? message = json['message'];
+
+      throw ApiException(
+        message is String && message.isNotEmpty
+            ? message
+            : 'Unexpected current user response from the server.',
+        statusCode: json['status'] as int?,
+      );
     }
 
-    return User.fromJson(json);
+    return User.fromJson(data);
   }
 
   Future<String?> readStoredToken() => _tokens.readToken();

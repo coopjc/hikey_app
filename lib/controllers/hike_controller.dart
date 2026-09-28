@@ -159,6 +159,18 @@ class HikeController extends ChangeNotifier {
     return null;
   }
 
+  Future<String?> updateNotes(Hike hike, String notes) async {
+    if (_activeHike?.id == hike.id) {
+      _activeHikeNotes = notes.isEmpty ? null : notes;
+    }
+
+    final String? error = await _queueUpdate(hike.id, notes: notes);
+
+    if (error == null) loadHikes();
+
+    return error;
+  }
+
   static List<HikePoint> buildPointList(List<Position> route) {
     double elevation =
         route.where((Position p) => p.hasAltitude).firstOrNull?.altitude ?? 0;

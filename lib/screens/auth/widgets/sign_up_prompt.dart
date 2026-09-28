@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hikey_app/screens/auth/register_screen.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers/auth_controller.dart';
@@ -24,12 +25,11 @@ class SignUpPrompt extends StatelessWidget {
           onPressed: enabled
               ? () {
                   context.read<AuthController>().clearMessage();
-
-                  /** Navigator.of(context).push(
+                  Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => const RegisterScreen(),
                     ),
-                  ); */
+                  );
                 }
               : null,
           child: const Text('Create an account'),

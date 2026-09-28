@@ -92,7 +92,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           textInputAction: TextInputAction.next,
                           autofillHints: const <String>[AutofillHints.email],
                           validator: Validators.email,
-                          errorText: auth.message,
                           onChanged: (_) => auth.clearMessage(),
                           onSubmitted: (_) => _passwordFocus.requestFocus(),
                         ),
@@ -108,8 +107,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           textInputAction: TextInputAction.done,
                           autofillHints: const <String>[AutofillHints.password],
                           validator: Validators.requiredPassword,
-                          errorText: auth.message,
-                          onChanged: (_) => auth.clearMessage(),
                           onSubmitted: (_) => _submit(),
                         ),
                         Align(

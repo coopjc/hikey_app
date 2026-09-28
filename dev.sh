@@ -1,0 +1,1 @@
+flutter run -d "iPhone 17" --dart-define-from-file=config.dev.json

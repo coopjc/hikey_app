@@ -25,7 +25,6 @@ class Validators {
   static String? name(String? value) {
     final String v = (value ?? '').trim();
     if (v.isEmpty) return 'Enter your name';
-    if (v.length < 2) return 'That name looks too short';
     return null;
   }
 
@@ -34,7 +33,7 @@ class Validators {
     if (v.isEmpty) return 'Enter your age';
     final int? parsed = int.tryParse(v);
     if (parsed == null) return 'Enter a valid age';
-    if (parsed < 13 || parsed > 120) return 'Enter an age between 13 and 120';
+    if (parsed < 13) return 'You must be at least 13 years-old';
     return null;
   }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class AuthErrorBanner extends StatelessWidget {
-  const AuthErrorBanner({super.key, required this.message});
+class ErrorBanner extends StatelessWidget {
+  const ErrorBanner({super.key, required this.message});
 
   final String? message;
 

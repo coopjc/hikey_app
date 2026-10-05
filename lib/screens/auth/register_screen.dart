@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/auth_controller.dart';
 import '../../utils/validators.dart';
+import '../../widgets/error_banner.dart';
 import '../../widgets/hikey_logo.dart';
 import '../../widgets/hikey_text_field.dart';
-import 'widgets/error_banner.dart';
 import 'widgets/password_strength_bar.dart';
 import 'widgets/submit_button.dart';
 import 'widgets/terms_checkbox.dart';
@@ -128,7 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         const SizedBox(height: 28),
-                        AuthErrorBanner(message: auth.message),
+                        ErrorBanner(message: auth.message),
                         HikeyTextField(
                           controller: _name,
                           label: 'Name',

@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../controllers/auth_controller.dart';
 import '../../utils/validators.dart';
 import '../../widgets/background.dart';
+import '../../widgets/error_banner.dart';
 import '../../widgets/hikey_logo.dart';
 import '../../widgets/hikey_text_field.dart';
-import 'widgets/error_banner.dart';
 import 'widgets/sign_up_prompt.dart';
 import 'widgets/submit_button.dart';
 
@@ -81,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        AuthErrorBanner(message: auth.message),
+                        ErrorBanner(message: auth.message),
                         HikeyTextField(
                           controller: _email,
                           label: 'Email',

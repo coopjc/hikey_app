@@ -19,22 +19,35 @@ class StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          for (int i = 0; i < stats.length; i++) ...<Widget>[
-            if (i != 0) const SizedBox(width: 8),
-            Expanded(child: _StatCard(item: stats[i])),
-          ],
-        ],
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+
+    return Card.filled(
+      color: scheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (int i = 0; i < stats.length; i++) ...<Widget>[
+                if (i != 0)
+                  VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: scheme.onSecondaryContainer.withValues(alpha: 0.2),
+                  ),
+                Expanded(child: _Stat(item: stats[i])),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.item});
+class _Stat extends StatelessWidget {
+  const _Stat({required this.item});
 
   final StatItem item;
 
@@ -43,30 +56,37 @@ class _StatCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
 
-    return Card.filled(
-      color: scheme.surfaceContainerHigh,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(item.icon, color: scheme.primary, size: 22),
-            const SizedBox(height: 12),
-            Text(
-              item.value,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(item.icon, color: scheme.primary, size: 20),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text.rich(
+              TextSpan(
+                children: <InlineSpan>[
+                  TextSpan(
+                    text: item.value,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSecondaryContainer,
+                    ),
+                  ),
+                  TextSpan(
+                    text: ' ${item.label}',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: scheme.onSecondaryContainer,
+                    ),
+                  ),
+                ],
+              ),
               maxLines: 1,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              overflow: TextOverflow.ellipsis,
             ),
-            Text(
-              item.label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

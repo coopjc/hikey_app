@@ -12,6 +12,7 @@ import 'widgets/account_menu.dart';
 import 'widgets/greeting.dart';
 import 'widgets/hike_card.dart';
 import 'widgets/navigate_button.dart';
+import 'widgets/quick_actions_row.dart';
 import 'widgets/stats_row.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -29,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+
       context.read<HikeController>().loadHikes();
     });
   }
@@ -106,7 +108,14 @@ class _HomeScreenState extends State<HomeScreen> {
         minimum: EdgeInsets.only(bottom: 16),
         child: Padding(
           padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: NavigateButton(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              QuickActionsRow(),
+              SizedBox(height: 12),
+              NavigateButton(),
+            ],
+          ),
         ),
       ),
     );

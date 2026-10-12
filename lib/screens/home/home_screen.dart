@@ -6,12 +6,12 @@ import '../../controllers/hike_controller.dart';
 import '../../models/hike.dart';
 import '../../models/user.dart';
 import '../../utils/hike_format.dart';
+import '../../widgets/error_notice.dart';
 import '../../widgets/hikey_logo.dart';
 import 'widgets/account_menu.dart';
-import 'widgets/activity_notice.dart';
 import 'widgets/greeting.dart';
 import 'widgets/hike_card.dart';
-import 'widgets/quick_actions_bar.dart';
+import 'widgets/navigate_button.dart';
 import 'widgets/stats_row.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -49,6 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(message)));
+
+        authController.clearMessage();
       });
     }
 
@@ -84,8 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
               Greeting(user: user),
               const SizedBox(height: 24),
               StatsRow(stats: _statsFor(hikeController)),
-              const SizedBox(height: 16),
-              const QuickActionsBar(),
               const SizedBox(height: 32),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -100,6 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ..._buildRecentActivity(theme, hikeController),
             ],
           ),
+        ),
+      ),
+      bottomNavigationBar: const SafeArea(
+        minimum: EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: NavigateButton(),
         ),
       ),
     );
@@ -135,19 +142,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (hikeController.errorMessage != null && hikeController.hikes.isEmpty) {
       return <Widget>[
-        ActivityNotice(
+        ErrorNotice(
           icon: Icons.cloud_off_rounded,
           message: hikeController.errorMessage!,
-          isError: true,
         ),
       ];
     }
 
     if (hikeController.hikes.isEmpty) {
       return <Widget>[
-        const ActivityNotice(
-          icon: Icons.explore_outlined,
-          message: 'No hikes yet — go explore!',
+        Card.filled(
+          color: theme.colorScheme.surfaceContainerLow,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              children: <Widget>[
+                Icon(
+                  Icons.explore_outlined,
+                  size: 36,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No hikes yet — go explore!',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ];
     }

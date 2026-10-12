@@ -66,6 +66,12 @@ class AccountMenu extends StatelessWidget {
           const Divider(),
         ],
         MenuItemButton(
+          leadingIcon: const Icon(Icons.settings_rounded),
+          onPressed: () {},
+          child: const Text('Settings'),
+        ),
+        const Divider(),
+        MenuItemButton(
           leadingIcon: const Icon(Icons.logout_rounded),
           onPressed: onSignOut,
           child: const Text('Sign out'),

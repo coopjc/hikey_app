@@ -19,7 +19,7 @@ class HikeDetailScreen extends StatelessWidget {
     final ColorScheme scheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(hike.name)),
+      appBar: AppBar(),
       body: SafeArea(
         top: false,
         child: ListView(

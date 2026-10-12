@@ -29,7 +29,7 @@ class Greeting extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            "Let's find your next trail.",
+            "Let's get hiking!",
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

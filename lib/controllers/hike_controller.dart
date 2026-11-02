@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import '../api/api_exception.dart';
 import '../models/hike.dart';
 import '../models/hike_point.dart';
+import '../models/paged.dart';
 import '../services/hike_service.dart';
 import './location_controller.dart';
 
@@ -12,11 +13,6 @@ class HikeController extends ChangeNotifier {
 
   final HikeService _hike;
 
-  List<Hike> _hikes = <Hike>[];
-  List<Hike> get hikes => _hikes;
-
-  bool _isLoading = false;
-  String? _errorMessage;
   Hike? _activeHike;
 
   String _activeHikeName = '';
@@ -27,32 +23,13 @@ class HikeController extends ChangeNotifier {
   // Updates queued to be sent to the server, so they don't get sent out of order.
   Future<void> _updates = Future<void>.value();
 
-  double get totalDistanceMiles =>
-      _hikes.fold<double>(0, (double sum, Hike h) => sum + h.distanceMiles);
-
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
-
-  Future<void> loadHikes() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      _hikes = await _hike.getHikes();
-    } on ApiException catch (e) {
-      _errorMessage = e.message;
-    } catch (e) {
-      _errorMessage = 'Something went wrong. Please try again.';
-    }
-
-    _isLoading = false;
-    notifyListeners();
+  Future<Paged<Hike>> getRecentHikes() {
+    return _hike.getHikes(size: 3, sortBy: 'createdAt', direction: 'desc');
   }
 
   Future<String?> startHike() async {
     try {
-      final Hike hike = await _hike.createHike(name: buildName(DateTime.now()));
+      final Hike hike = await _hike.startHike(name: buildName(DateTime.now()));
 
       _activeHike = hike;
       _activeHikeName = hike.name;
@@ -61,7 +38,6 @@ class HikeController extends ChangeNotifier {
       return e.message;
     }
 
-    loadHikes();
     return null;
   }
 
@@ -110,8 +86,6 @@ class HikeController extends ChangeNotifier {
       duration: recording.duration,
     );
 
-    loadHikes();
-
     return pointsError ?? updateError;
   }
 
@@ -151,11 +125,8 @@ class HikeController extends ChangeNotifier {
       return e.message;
     }
 
-    _hikes = _hikes.where((Hike h) => h.id != hike.id).toList();
-
     if (_activeHike?.id == hike.id) _activeHike = null;
 
-    notifyListeners();
     return null;
   }
 
@@ -164,11 +135,7 @@ class HikeController extends ChangeNotifier {
       _activeHikeNotes = notes.isEmpty ? null : notes;
     }
 
-    final String? error = await _queueUpdate(hike.id, notes: notes);
-
-    if (error == null) loadHikes();
-
-    return error;
+    return _queueUpdate(hike.id, notes: notes);
   }
 
   static List<HikePoint> buildPointList(List<Position> route) {

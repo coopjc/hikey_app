@@ -3,30 +3,45 @@ import '../api/api_exception.dart';
 import '../config/api_config.dart';
 import '../models/hike.dart';
 import '../models/hike_point.dart';
+import '../models/paged.dart';
 
 class HikeService {
   HikeService({required ApiClient apiClient}) : _api = apiClient;
 
   final ApiClient _api;
 
-  Future<List<Hike>> getHikes() async {
-    final Map<String, dynamic> json = await _api.get(ApiConfig.getHikesPath);
+  // sortBy is the backend's entity property name (e.g. createdAt), not the JSON key.
+  Future<Paged<Hike>> getHikes({
+    int page = 0,
+    int size = 10,
+    String sortBy = 'id',
+    String direction = 'asc',
+  }) async {
+    final Map<String, dynamic> json = await _api.get(
+      ApiConfig.getHikesPath,
+      query: <String, String>{
+        'page': '$page',
+        'size': '$size',
+        'sortBy': sortBy,
+        'direction': direction,
+      },
+    );
 
     final Object? data = json['data'];
 
-    if (data is! Map<String, dynamic> || data['hikes'] is! List<dynamic>) {
+    if (data is! Map<String, dynamic> ||
+        data['content'] is! List<dynamic> ||
+        data['page'] is! Map<String, dynamic>) {
       throw ApiException('Unexpected hikes response from the server.');
     }
 
-    return (data['hikes'] as List<dynamic>)
-        .map((dynamic h) => Hike.fromJson(h as Map<String, dynamic>))
-        .toList();
+    return Paged<Hike>.fromJson(data, Hike.fromJson);
   }
 
-  Future<Hike> createHike({required String name, String? notes}) async {
+  Future<Hike> startHike({required String name}) async {
     final Map<String, dynamic> json = await _api.post(
       ApiConfig.createHikePath,
-      body: <String, dynamic>{'name': name, 'notes': notes},
+      body: <String, dynamic>{'name': name},
     );
 
     final Object? data = json['data'];

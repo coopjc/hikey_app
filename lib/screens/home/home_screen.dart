@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:hikey_app/models/hike_stats.dart';
 import 'package:provider/provider.dart';
 
+import '../../api/api_exception.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/hike_controller.dart';
+import '../../controllers/user_controller.dart';
 import '../../models/hike.dart';
+import '../../models/paged.dart';
 import '../../models/user.dart';
 import '../../utils/hike_format.dart';
 import '../../widgets/error_notice.dart';
@@ -25,20 +29,66 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<Hike> _recentHikes = <Hike>[];
+  HikeStats? _stats;
+
+  bool _isLoading = false;
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      context.read<HikeController>().loadHikes();
+      _load();
     });
+  }
+
+  Future<void> _load() async {
+    await Future.wait(<Future<void>>[_loadStats(), _loadRecentHikes()]);
+  }
+
+  Future<void> _loadStats() async {
+    final UserController userController = context.read<UserController>();
+
+    try {
+      final HikeStats stats = await userController.getStats();
+
+      if (!mounted) return;
+
+      setState(() => _stats = stats);
+    } catch (_) {}
+  }
+
+  Future<void> _loadRecentHikes() async {
+    final HikeController hikeController = context.read<HikeController>();
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final Paged<Hike> page = await hikeController.getRecentHikes();
+
+      if (!mounted) return;
+
+      _recentHikes = page.content;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+    } catch (e) {
+      _errorMessage = 'Something went wrong. Please try again.';
+    }
+
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final AuthController authController = context.watch<AuthController>();
-    final HikeController hikeController = context.watch<HikeController>();
 
     final User? user = authController.user;
     final ThemeData theme = Theme.of(context);
@@ -81,13 +131,13 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         top: false,
         child: RefreshIndicator(
-          onRefresh: () => context.read<HikeController>().loadHikes(),
+          onRefresh: _load,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: <Widget>[
               Greeting(user: user),
               const SizedBox(height: 24),
-              StatsRow(stats: _statsFor(hikeController)),
+              StatsRow(stats: _buildStatItems()),
               const SizedBox(height: 32),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -99,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              ..._buildRecentActivity(theme, hikeController),
+              ..._buildRecentActivity(theme),
             ],
           ),
         ),
@@ -121,26 +171,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<StatItem> _statsFor(HikeController hikeController) {
+  List<StatItem> _buildStatItems() {
+    final HikeStats? stats = _stats;
+
     return <StatItem>[
       StatItem(
         icon: Icons.hiking_rounded,
-        value: '${hikeController.hikes.length}',
+        value: stats == null ? '–' : '${stats.totalHikes}',
         label: 'Hikes',
       ),
       StatItem(
         icon: Icons.route_rounded,
-        value: formatMiles(hikeController.totalDistanceMiles),
+        value: stats == null ? '–' : formatMiles(stats.totalDistanceMiles),
         label: 'Miles',
       ),
     ];
   }
 
-  List<Widget> _buildRecentActivity(
-    ThemeData theme,
-    HikeController hikeController,
-  ) {
-    if (hikeController.isLoading && hikeController.hikes.isEmpty) {
+  List<Widget> _buildRecentActivity(ThemeData theme) {
+    if (_isLoading && _recentHikes.isEmpty) {
       return <Widget>[
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 32),
@@ -149,16 +198,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ];
     }
 
-    if (hikeController.errorMessage != null && hikeController.hikes.isEmpty) {
+    if (_errorMessage != null && _recentHikes.isEmpty) {
       return <Widget>[
-        ErrorNotice(
-          icon: Icons.cloud_off_rounded,
-          message: hikeController.errorMessage!,
-        ),
+        ErrorNotice(icon: Icons.cloud_off_rounded, message: _errorMessage!),
       ];
     }
 
-    if (hikeController.hikes.isEmpty) {
+    if (_recentHikes.isEmpty) {
       return <Widget>[
         Card.filled(
           color: theme.colorScheme.surfaceContainerLow,
@@ -186,11 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ];
     }
 
-    final List<Hike> recentHikes = hikeController.hikes.toList()
-      ..sort((Hike a, Hike b) => b.updatedAt.compareTo(a.updatedAt));
-
     return <Widget>[
-      for (final Hike hike in recentHikes.take(3)) ...<Widget>[
+      for (final Hike hike in _recentHikes) ...<Widget>[
         HikeCard(hike: hike),
         const SizedBox(height: 8),
       ],

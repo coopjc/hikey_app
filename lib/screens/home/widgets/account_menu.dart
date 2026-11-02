@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/user.dart';
+import '../../settings/settings_screen.dart';
 
 class AccountMenu extends StatelessWidget {
   const AccountMenu({super.key, required this.user, required this.onSignOut});
@@ -67,7 +68,9 @@ class AccountMenu extends StatelessWidget {
         ],
         MenuItemButton(
           leadingIcon: const Icon(Icons.settings_rounded),
-          onPressed: () {},
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+          ),
           child: const Text('Settings'),
         ),
         const Divider(),

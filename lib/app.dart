@@ -6,6 +6,7 @@ import 'config/api_config.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/hike_controller.dart';
 import 'controllers/location_controller.dart';
+import 'controllers/user_controller.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/splash/splash_screen.dart';
@@ -13,6 +14,7 @@ import 'services/auth_service.dart';
 import 'services/hike_service.dart';
 import 'services/location_service.dart';
 import 'services/token_storage.dart';
+import 'services/user_service.dart';
 import 'theme/hikey_theme.dart';
 
 class HikeyApp extends StatefulWidget {
@@ -29,6 +31,9 @@ class _HikeyAppState extends State<HikeyApp> {
 
   late final AuthService _authService;
   late final AuthController _authController;
+
+  late final UserService _userService;
+  late final UserController _userController;
 
   late final HikeService _hikeService;
   late final HikeController _hikeController;
@@ -50,6 +55,8 @@ class _HikeyAppState extends State<HikeyApp> {
     );
 
     _authController = AuthController(authService: _authService);
+    _userService = UserService(apiClient: _apiClient);
+    _userController = UserController(userService: _userService);
     _hikeService = HikeService(apiClient: _apiClient);
     _hikeController = HikeController(hikeService: _hikeService);
     _locationService = const LocationService();
@@ -68,6 +75,7 @@ class _HikeyAppState extends State<HikeyApp> {
   void dispose() {
     _locationController.dispose();
     _hikeController.dispose();
+    _userController.dispose();
     _authController.dispose();
     _apiClient.dispose();
     super.dispose();
@@ -81,6 +89,9 @@ class _HikeyAppState extends State<HikeyApp> {
 
         Provider<AuthService>.value(value: _authService),
         ChangeNotifierProvider<AuthController>.value(value: _authController),
+
+        Provider<UserService>.value(value: _userService),
+        ChangeNotifierProvider<UserController>.value(value: _userController),
 
         Provider<HikeService>.value(value: _hikeService),
         ChangeNotifierProvider<HikeController>.value(value: _hikeController),

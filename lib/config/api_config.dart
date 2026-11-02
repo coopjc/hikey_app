@@ -7,6 +7,7 @@ class ApiConfig {
   static const String registerPath = '/api/auth/register';
   static const String loginPath = '/api/auth/login';
   static const String currentUserPath = '/api/users/me';
+  static const String currentUserStatsPath = '/api/users/me/stats';
   static const String getHikesPath = '/api/hikes';
   static const String createHikePath = '/api/hikes';
   static String hikePath(int hikeId) => '/api/hikes/$hikeId';

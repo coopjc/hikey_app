@@ -11,6 +11,8 @@ import './location_controller.dart';
 class HikeController extends ChangeNotifier {
   HikeController({required HikeService hikeService}) : _hike = hikeService;
 
+  static const int hikesPageSize = 10;
+
   final HikeService _hike;
 
   Hike? _activeHike;
@@ -26,6 +28,18 @@ class HikeController extends ChangeNotifier {
   Future<Paged<Hike>> getRecentHikes() {
     return _hike.getHikes(size: 3, sortBy: 'createdAt', direction: 'desc');
   }
+
+  // Newest first. page is zero-based.
+  Future<Paged<Hike>> getHikesPage(int page) {
+    return _hike.getHikes(
+      page: page,
+      size: hikesPageSize,
+      sortBy: 'createdAt',
+      direction: 'desc',
+    );
+  }
+
+  Future<Hike> getHike(int hikeId) => _hike.getHike(hikeId);
 
   Future<String?> startHike() async {
     try {

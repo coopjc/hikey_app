@@ -70,14 +70,27 @@ class _DeleteHikeButtonState extends State<DeleteHikeButton> {
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
-    return OutlinedButton.icon(
+    return FilledButton.icon(
       // Disabled while the request is out, so it can't be sent twice.
       onPressed: _isDeleting ? null : _confirmAndDelete,
-      icon: const Icon(Icons.delete_outline_rounded),
+      icon: _isDeleting
+          ? SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colors.onErrorContainer,
+              ),
+            )
+          : const Icon(Icons.delete_outline_rounded),
       label: Text(_isDeleting ? 'Deleting…' : 'Delete hike'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: colors.error,
-        side: BorderSide(color: colors.error),
+      style: FilledButton.styleFrom(
+        backgroundColor: colors.errorContainer,
+        foregroundColor: colors.onErrorContainer,
+        disabledBackgroundColor: colors.errorContainer.withValues(alpha: 0.6),
+        disabledForegroundColor: colors.onErrorContainer,
+        minimumSize: const Size.fromHeight(52),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
     );
   }

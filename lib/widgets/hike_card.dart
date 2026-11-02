@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hikey_app/screens/hike_detail/hike_detail_screen.dart';
 
-import '../../../models/hike.dart';
-import '../../../utils/relative_time.dart';
+import '../models/hike.dart';
+import '../screens/hike_detail/hike_detail_screen.dart';
+import '../utils/relative_time.dart';
 
 class HikeCard extends StatelessWidget {
   const HikeCard({super.key, required this.hike});
@@ -18,7 +18,9 @@ class HikeCard extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
         onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => HikeDetailScreen(hike: hike)),
+          MaterialPageRoute<void>(
+            builder: (_) => HikeDetailScreen(hikeId: hike.id),
+          ),
         ),
         leading: CircleAvatar(
           radius: 22,

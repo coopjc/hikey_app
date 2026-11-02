@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../hikes/hikes_screen.dart';
+
 class QuickActionsRow extends StatelessWidget {
   const QuickActionsRow({super.key});
 
@@ -19,7 +21,9 @@ class QuickActionsRow extends StatelessWidget {
           child: _QuickActionButton(
             icon: Icons.list_alt_rounded,
             label: 'Hikes',
-            onTap: () {},
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const HikesScreen()),
+            ),
           ),
         ),
       ],

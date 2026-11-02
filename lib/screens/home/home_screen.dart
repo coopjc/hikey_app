@@ -11,10 +11,11 @@ import '../../models/paged.dart';
 import '../../models/user.dart';
 import '../../utils/hike_format.dart';
 import '../../widgets/error_notice.dart';
+import '../../widgets/hike_card.dart';
 import '../../widgets/hikey_logo.dart';
+import '../../widgets/no_hikes_notice.dart';
 import 'widgets/account_menu.dart';
 import 'widgets/greeting.dart';
-import 'widgets/hike_card.dart';
 import 'widgets/navigate_button.dart';
 import 'widgets/quick_actions_row.dart';
 import 'widgets/stats_row.dart';
@@ -149,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              ..._buildRecentActivity(theme),
+              ..._buildRecentActivity(),
             ],
           ),
         ),
@@ -188,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  List<Widget> _buildRecentActivity(ThemeData theme) {
+  List<Widget> _buildRecentActivity() {
     if (_isLoading && _recentHikes.isEmpty) {
       return <Widget>[
         const Padding(
@@ -204,33 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ];
     }
 
-    if (_recentHikes.isEmpty) {
-      return <Widget>[
-        Card.filled(
-          color: theme.colorScheme.surfaceContainerLow,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              children: <Widget>[
-                Icon(
-                  Icons.explore_outlined,
-                  size: 36,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'No hikes yet — go explore!',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ];
-    }
+    if (_recentHikes.isEmpty) return const <Widget>[NoHikesNotice()];
 
     return <Widget>[
       for (final Hike hike in _recentHikes) ...<Widget>[

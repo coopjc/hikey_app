@@ -13,6 +13,8 @@ class Paged<T> {
   final int totalElements;
   final int totalPages;
 
+  bool get isLast => number + 1 >= totalPages;
+
   factory Paged.fromJson(
     Map<String, dynamic> json,
     T Function(Map<String, dynamic>) fromItem,

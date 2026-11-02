@@ -38,6 +38,20 @@ class HikeService {
     return Paged<Hike>.fromJson(data, Hike.fromJson);
   }
 
+  Future<Hike> getHike(int hikeId) async {
+    final Map<String, dynamic> json = await _api.get(
+      ApiConfig.hikePath(hikeId),
+    );
+
+    final Object? data = json['data'];
+
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('Unexpected hike response from the server.');
+    }
+
+    return Hike.fromJson(data);
+  }
+
   Future<Hike> startHike({required String name}) async {
     final Map<String, dynamic> json = await _api.post(
       ApiConfig.createHikePath,

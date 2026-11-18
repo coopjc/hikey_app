@@ -1,27 +1,23 @@
 enum HikeStatus {
-  created,
-  inProgress,
+  active,
   paused,
   completed;
 
   factory HikeStatus.fromJson(String value) => switch (value) {
-    'CREATED' => HikeStatus.created,
-    'IN_PROGRESS' => HikeStatus.inProgress,
+    'ACTIVE' => HikeStatus.active,
     'PAUSED' => HikeStatus.paused,
     'COMPLETED' => HikeStatus.completed,
     _ => throw FormatException('Unknown hike status: $value'),
   };
 
   String toJson() => switch (this) {
-    HikeStatus.created => 'CREATED',
-    HikeStatus.inProgress => 'IN_PROGRESS',
+    HikeStatus.active => 'ACTIVE',
     HikeStatus.paused => 'PAUSED',
     HikeStatus.completed => 'COMPLETED',
   };
 
   String get label => switch (this) {
-    HikeStatus.created => 'Created',
-    HikeStatus.inProgress => 'In progress',
+    HikeStatus.active => 'Active',
     HikeStatus.paused => 'Paused',
     HikeStatus.completed => 'Completed',
   };
@@ -35,6 +31,7 @@ class Hike {
     required this.status,
     this.durationMin = 0.0,
     this.distanceMiles = 0.0,
+    this.completedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -45,6 +42,7 @@ class Hike {
   final HikeStatus status;
   final double distanceMiles;
   final double durationMin;
+  final DateTime? completedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -60,6 +58,9 @@ class Hike {
       status: HikeStatus.fromJson(json['status'] as String),
       distanceMiles: (json['distance_miles'] as num).toDouble(),
       durationMin: (json['duration_min'] as num).toDouble(),
+      completedAt: json['completed_at'] == null
+          ? null
+          : DateTime.parse(json['completed_at'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -72,6 +73,7 @@ class Hike {
     'status': status.toJson(),
     'distance_miles': distanceMiles,
     'duration_min': durationMin,
+    'completed_at': completedAt?.toIso8601String(),
     'created_at': createdAt.toIso8601String(),
     'updated': updatedAt.toIso8601String(),
   };

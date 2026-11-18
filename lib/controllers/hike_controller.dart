@@ -6,21 +6,28 @@ import '../models/hike.dart';
 import '../models/hike_point.dart';
 import '../models/paged.dart';
 import '../services/hike_service.dart';
+import '../utils/hike_format.dart';
 import './location_controller.dart';
 
 class HikeController extends ChangeNotifier {
-  HikeController({required HikeService hikeService}) : _hike = hikeService;
+  HikeController({
+    required HikeService hikeService,
+    required LocationController locationController,
+  }) : _hike = hikeService,
+       _location = locationController;
 
   static const int hikesPageSize = 10;
 
   final HikeService _hike;
+  final LocationController _location;
 
   Hike? _activeHike;
+  Hike? get activeHike => _activeHike;
 
-  String _activeHikeName = '';
-  String get activeHikeName => _activeHikeName;
-  String? _activeHikeNotes;
-  String? get activeHikeNotes => _activeHikeNotes;
+  bool _isTransitioning = false;
+  bool get isTransitioning => _isTransitioning;
+
+  int _sentPointCount = 0;
 
   // Updates queued to be sent to the server, so they don't get sent out of order.
   Future<void> _updates = Future<void>.value();
@@ -29,7 +36,6 @@ class HikeController extends ChangeNotifier {
     return _hike.getHikes(size: 3, sortBy: 'createdAt', direction: 'desc');
   }
 
-  // Newest first. page is zero-based.
   Future<Paged<Hike>> getHikesPage(int page) {
     return _hike.getHikes(
       page: page,
@@ -41,86 +47,151 @@ class HikeController extends ChangeNotifier {
 
   Future<Hike> getHike(int hikeId) => _hike.getHike(hikeId);
 
-  Future<String?> startHike() async {
-    try {
-      final Hike hike = await _hike.startHike(name: buildName(DateTime.now()));
-
-      _activeHike = hike;
-      _activeHikeName = hike.name;
-      _activeHikeNotes = hike.notes;
-    } on ApiException catch (e) {
-      return e.message;
+  Future<String?> startHike() {
+    if (_activeHike != null) {
+      return Future<String?>.value('A hike is already in progress.');
     }
 
-    return null;
+    return _transitionHike(() async {
+      final String? locationError = await _ensureTracking();
+
+      if (locationError != null) return locationError;
+
+      _activeHike = await _hike.startHike(name: formatName(DateTime.now()));
+      _sentPointCount = 0;
+
+      await _location.startRecording();
+
+      return null;
+    });
   }
 
-  Future<String?> updateActiveHike({
-    required String name,
-    String? notes,
-    required HikeStatus status,
-  }) {
+  Future<String?> pauseHike() {
     final Hike? hike = _activeHike;
 
     if (hike == null) {
       return Future<String?>.value('There is no hike in progress.');
     }
 
-    _activeHikeName = name;
-    _activeHikeNotes = notes;
+    return _transitionHike(() async {
+      await _pushUnsentPoints(hike.id);
 
-    return _queueUpdate(hike.id, name: name, notes: notes, status: status);
+      _activeHike = await _hike.pauseHike(hike.id);
+      _location.pauseRecording();
+
+      return null;
+    });
   }
 
-  Future<String?> finishHike(
-    RecordedHike recording, {
-    required String name,
-    String? notes,
-  }) async {
+  Future<String?> resumeHike() {
     final Hike? hike = _activeHike;
 
-    if (hike == null) return 'There is no hike in progress to save.';
-    _activeHike = null;
-
-    String? pointsError;
-
-    try {
-      List<HikePoint> hikePoints = buildPointList(recording.route);
-      await _hike.pushHikePoints(hike.id, hikePoints);
-    } on ApiException catch (e) {
-      pointsError = e.message;
+    if (hike == null) {
+      return Future<String?>.value('There is no hike in progress.');
     }
 
-    final String? updateError = await _queueUpdate(
-      hike.id,
-      name: name,
-      notes: notes,
-      status: HikeStatus.completed,
-      distanceMiles: recording.distanceMiles,
-      duration: recording.duration,
-    );
+    return _transitionHike(() async {
+      final String? locationError = await _ensureTracking();
 
-    return pointsError ?? updateError;
+      if (locationError != null) return locationError;
+
+      _activeHike = await _hike.resumeHike(hike.id);
+      await _location.resumeRecording();
+
+      return null;
+    });
   }
 
-  Future<String?> _queueUpdate(
-    int hikeId, {
-    String? name,
-    String? notes,
-    HikeStatus? status,
-    double? distanceMiles,
-    Duration? duration,
-  }) {
+  Future<String?> completeHike() {
+    final Hike? hike = _activeHike;
+
+    if (hike == null) {
+      return Future<String?>.value('There is no hike in progress.');
+    }
+
+    return _transitionHike(() async {
+      await _pushUnsentPoints(hike.id);
+      await _hike.completeHike(hike.id);
+
+      _clearActiveHike();
+
+      return null;
+    });
+  }
+
+  Future<String?> _transitionHike(Future<String?> Function() change) async {
+    if (_isTransitioning) return null;
+
+    _isTransitioning = true;
+    notifyListeners();
+
+    try {
+      return await change();
+    } on ApiException catch (e) {
+      return e.message;
+    } finally {
+      _isTransitioning = false;
+      notifyListeners();
+    }
+  }
+
+  static List<HikePoint> buildPointList(List<List<Position>> stretches) {
+    double elevation =
+        stretches
+            .expand((List<Position> stretch) => stretch)
+            .where((Position p) => p.hasAltitude)
+            .firstOrNull
+            ?.altitude ??
+        0;
+
+    final List<HikePoint> points = <HikePoint>[];
+
+    for (int i = 0; i < stretches.length; i++) {
+      for (final Position p in stretches[i]) {
+        if (p.hasAltitude) elevation = p.altitude;
+
+        points.add(
+          HikePoint(
+            stretchIndex: i,
+            latitude: p.latitude,
+            longitude: p.longitude,
+            elevation: elevation,
+            savedAt: p.timestamp,
+          ),
+        );
+      }
+    }
+
+    return points;
+  }
+
+  Future<void> _pushUnsentPoints(int hikeId) async {
+    final List<HikePoint> points = buildPointList(_location.routeStretches);
+
+    if (points.length <= _sentPointCount) return;
+
+    final List<HikePoint> unsent = points.sublist(_sentPointCount);
+    final int savedCount = await _hike.pushHikePoints(hikeId, unsent);
+
+    _sentPointCount += savedCount.clamp(0, unsent.length);
+
+    if (savedCount != unsent.length) {
+      throw ApiException(
+        'The server stored $savedCount of ${unsent.length} tracked points.',
+      );
+    }
+  }
+
+  void _clearActiveHike() {
+    _activeHike = null;
+    _sentPointCount = 0;
+    _location.finishRecording();
+  }
+
+  Future<String?> _queueUpdate(int hikeId, {String? name, String? notes}) {
     final Future<String?> result = _updates.then((_) async {
       try {
-        await _hike.updateHike(
-          hikeId,
-          name: name,
-          notes: notes,
-          status: status,
-          distanceMiles: distanceMiles,
-          duration: duration,
-        );
+        await _hike.updateHike(hikeId, name: name, notes: notes);
 
         return null;
       } on ApiException catch (e) {
@@ -129,7 +200,16 @@ class HikeController extends ChangeNotifier {
     });
 
     _updates = result.then<void>((_) {}, onError: (Object _) {});
+
     return result;
+  }
+
+  Future<String?> updateName(Hike hike, String name) {
+    return _queueUpdate(hike.id, name: name);
+  }
+
+  Future<String?> updateNotes(Hike hike, String notes) {
+    return _queueUpdate(hike.id, notes: notes);
   }
 
   Future<String?> deleteHike(Hike hike) async {
@@ -139,65 +219,19 @@ class HikeController extends ChangeNotifier {
       return e.message;
     }
 
-    if (_activeHike?.id == hike.id) _activeHike = null;
+    if (_activeHike?.id == hike.id) {
+      _clearActiveHike();
+      notifyListeners();
+    }
 
     return null;
   }
 
-  Future<String?> updateNotes(Hike hike, String notes) async {
-    if (_activeHike?.id == hike.id) {
-      _activeHikeNotes = notes.isEmpty ? null : notes;
-    }
+  Future<String?> _ensureTracking() async {
+    await _location.startTracking();
 
-    return _queueUpdate(hike.id, notes: notes);
-  }
+    if (_location.isTracking) return null;
 
-  static List<HikePoint> buildPointList(List<Position> route) {
-    double elevation =
-        route.where((Position p) => p.hasAltitude).firstOrNull?.altitude ?? 0;
-
-    final List<HikePoint> points = <HikePoint>[];
-
-    for (final Position p in route) {
-      if (p.hasAltitude) elevation = p.altitude;
-
-      points.add(
-        HikePoint(
-          latitude: p.latitude,
-          longitude: p.longitude,
-          elevation: elevation,
-          savedAt: p.timestamp,
-        ),
-      );
-    }
-
-    return points;
-  }
-
-  static String buildName(DateTime startedAt) {
-    const List<String> months = <String>[
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    final int hour = startedAt.hour;
-
-    final String partOfDay = switch (hour) {
-      >= 5 && < 12 => 'Morning',
-      >= 12 && < 17 => 'Afternoon',
-      >= 17 && < 21 => 'Evening',
-      _ => 'Night',
-    };
-
-    return '$partOfDay hike · ${months[startedAt.month - 1]} ${startedAt.day}';
+    return _location.errorMessage;
   }
 }

@@ -10,7 +10,6 @@ class HikeService {
 
   final ApiClient _api;
 
-  // sortBy is the backend's entity property name (e.g. createdAt), not the JSON key.
   Future<Paged<Hike>> getHikes({
     int page = 0,
     int size = 10,
@@ -67,25 +66,31 @@ class HikeService {
     return Hike.fromJson(data);
   }
 
-  Future<void> updateHike(
-    int hikeId, {
-    String? name,
-    String? notes,
-    HikeStatus? status,
-    double? distanceMiles,
-    Duration? duration,
-  }) async {
+  Future<Hike> pauseHike(int hikeId) =>
+      _transitionHike(ApiConfig.pauseHikePath(hikeId), 'pause');
+
+  Future<Hike> resumeHike(int hikeId) =>
+      _transitionHike(ApiConfig.resumeHikePath(hikeId), 'resume');
+
+  Future<Hike> completeHike(int hikeId) =>
+      _transitionHike(ApiConfig.completeHikePath(hikeId), 'complete');
+
+  Future<Hike> _transitionHike(String path, String action) async {
+    final Map<String, dynamic> json = await _api.post(path);
+
+    final Object? data = json['data'];
+
+    if (data is! Map<String, dynamic>) {
+      throw ApiException('Unexpected $action hike response from the server.');
+    }
+
+    return Hike.fromJson(data);
+  }
+
+  Future<void> updateHike(int hikeId, {String? name, String? notes}) async {
     await _api.patch(
       ApiConfig.hikePath(hikeId),
-      body: <String, dynamic>{
-        'name': ?name,
-        'notes': ?notes,
-        'status': ?status,
-        'distance_miles': ?distanceMiles,
-        if (duration != null)
-          'duration_min':
-              duration.inMilliseconds / Duration.millisecondsPerMinute,
-      },
+      body: <String, dynamic>{'name': ?name, 'notes': ?notes},
     );
   }
 
@@ -110,12 +115,22 @@ class HikeService {
         .toList();
   }
 
-  Future<void> pushHikePoints(int hikeId, List<HikePoint> points) async {
-    await _api.post(
+  Future<int> pushHikePoints(int hikeId, List<HikePoint> points) async {
+    final Map<String, dynamic> json = await _api.post(
       ApiConfig.hikePointsPath(hikeId),
       body: <String, dynamic>{
         'hike_points': points.map((HikePoint p) => p.toJson()).toList(),
       },
     );
+
+    final Object? data = json['data'];
+
+    if (data is! List<dynamic>) {
+      throw ApiException(
+        'Unexpected push hike points response from the server.',
+      );
+    }
+
+    return data.length;
   }
 }

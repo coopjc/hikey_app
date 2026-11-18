@@ -16,6 +16,7 @@ import 'services/location_service.dart';
 import 'services/token_storage.dart';
 import 'services/user_service.dart';
 import 'theme/hikey_theme.dart';
+import 'utils/route_observer.dart';
 
 class HikeyApp extends StatefulWidget {
   const HikeyApp({super.key});
@@ -58,9 +59,12 @@ class _HikeyAppState extends State<HikeyApp> {
     _userService = UserService(apiClient: _apiClient);
     _userController = UserController(userService: _userService);
     _hikeService = HikeService(apiClient: _apiClient);
-    _hikeController = HikeController(hikeService: _hikeService);
     _locationService = const LocationService();
     _locationController = LocationController(locationService: _locationService);
+    _hikeController = HikeController(
+      hikeService: _hikeService,
+      locationController: _locationController,
+    );
 
     _apiClient.onUnauthorized = () {
       if (_authController.isAuthenticated) _authController.logout();
@@ -106,6 +110,7 @@ class _HikeyAppState extends State<HikeyApp> {
         debugShowCheckedModeBanner: false,
         theme: HikeyTheme.light(),
         darkTheme: HikeyTheme.dark(),
+        navigatorObservers: <NavigatorObserver>[routeObserver],
         home: const _AuthGate(),
       ),
     );

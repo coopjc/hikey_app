@@ -12,6 +12,9 @@ class ApiConfig {
   static const String createHikePath = '/api/hikes';
   static String hikePath(int hikeId) => '/api/hikes/$hikeId';
   static String hikePointsPath(int hikeId) => '/api/hikes/$hikeId/points';
+  static String pauseHikePath(int hikeId) => '/api/hikes/$hikeId/pause';
+  static String resumeHikePath(int hikeId) => '/api/hikes/$hikeId/resume';
+  static String completeHikePath(int hikeId) => '/api/hikes/$hikeId/complete';
 
   static const Duration timeout = Duration(seconds: 15);
 }

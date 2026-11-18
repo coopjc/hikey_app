@@ -19,6 +19,6 @@ Hikey is a mobile app for hiking enthusiasts, built with Flutter.
   <tr>
     <td><img src="images/login.png" width="250" alt="Hikey sign in screen with email and password fields" /></td>
     <td><img src="images/dashboard.png" width="250" alt="Hikey home screen showing hike and distance stats, recent activity, and navigation actions" /></td>
-    <td><img src="images/idle_map.png" width="250" alt="Hikey map screen showing the user's location and hike actions" /></td>
+    <td><img src="images/map_idle.png" width="250" alt="Hikey map screen showing the user's location and hike actions" /></td>
   </tr>
 </table>

@@ -9,6 +9,7 @@ import '../../controllers/user_controller.dart';
 import '../../models/hike.dart';
 import '../../models/hike_stats.dart';
 import '../../models/paged.dart';
+import '../../utils/route_observer.dart';
 import '../../widgets/error_notice.dart';
 import '../../widgets/hike_card.dart';
 import '../../widgets/no_hikes_notice.dart';
@@ -21,19 +22,16 @@ class HikesScreen extends StatefulWidget {
   State<HikesScreen> createState() => _HikesScreenState();
 }
 
-class _HikesScreenState extends State<HikesScreen> {
+class _HikesScreenState extends State<HikesScreen> with RouteAware {
   final ScrollController _scrollController = ScrollController();
+
+  int? _totalHikes;
 
   List<Hike> _hikes = <Hike>[];
   int _page = 0;
   bool _isLoading = false;
   String? _errorMessage;
 
-  // From the user's stats; null until they've loaded.
-  int? _totalHikes;
-
-  // Bumped on every request so a response that's been superseded (e.g. by
-  // picking another page) is ignored.
   int _requestId = 0;
 
   int get _pageCount =>
@@ -44,16 +42,27 @@ class _HikesScreenState extends State<HikesScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-
       _loadPage(0);
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final ModalRoute<void>? route = ModalRoute.of(context);
+    if (route is PageRoute<void>) routeObserver.subscribe(this, route);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _scrollController.dispose();
     super.dispose();
   }
+
+  @override
+  void didPopNext() => _loadPage(_page, refreshStats: true);
 
   void _goToPage(int page) {
     if (_scrollController.hasClients) _scrollController.jumpTo(0);
@@ -65,6 +74,7 @@ class _HikesScreenState extends State<HikesScreen> {
   Future<void> _loadPage(int page, {bool refreshStats = false}) async {
     final HikeController hikeController = context.read<HikeController>();
     final UserController userController = context.read<UserController>();
+
     final int requestId = ++_requestId;
 
     setState(() {
@@ -81,7 +91,6 @@ class _HikesScreenState extends State<HikesScreen> {
 
         _totalHikes = stats.totalHikes;
 
-        // Hikes may have been deleted since this page was picked.
         page = page.clamp(0, max(_pageCount - 1, 0));
       }
 

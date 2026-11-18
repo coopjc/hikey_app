@@ -10,6 +10,7 @@ import '../../models/hike.dart';
 import '../../models/paged.dart';
 import '../../models/user.dart';
 import '../../utils/hike_format.dart';
+import '../../utils/route_observer.dart';
 import '../../widgets/error_notice.dart';
 import '../../widgets/hike_card.dart';
 import '../../widgets/hikey_logo.dart';
@@ -29,7 +30,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   List<Hike> _recentHikes = <Hike>[];
   HikeStats? _stats;
 
@@ -45,6 +46,23 @@ class _HomeScreenState extends State<HomeScreen> {
       _load();
     });
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final ModalRoute<void>? route = ModalRoute.of(context);
+    if (route is PageRoute<void>) routeObserver.subscribe(this, route);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() => _load();
 
   Future<void> _load() async {
     await Future.wait(<Future<void>>[_loadStats(), _loadRecentHikes()]);
